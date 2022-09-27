@@ -47,23 +47,14 @@
           {% for product in products %}
           <div class="col-md-3">
             <div class="card card-product-grid">
-              <div class="card" style="width: 18rem;">
-                <img src="{{product.images.url}}" class="card-img-top" alt="...">
-                <div class="card-body">
-                  <h5 class="card-title"><a href="./product-detail.html" class="title"
-                    >{{ product.product_name }}</a
-                  ></h5>
-                  <div class="price mt-1">{{product.price}}</div>
-                  <p class="card-text">{{ product.description }}</p>
-                  <a href="#" class="btn btn-dark mt-3">Add to cart</a>
-                </div>
-              </div>
-              {% comment %} <a href="./product-detail.html" class="img-wrap"> {% endcomment %}
-                {% comment %} <img src="" /> {% endcomment %}
-              {% comment %} </a> {% endcomment %}
-              {% comment %} <figcaption class="info-wrap"> {% endcomment %}
-                
-               
+              <a href="{{ product.get_url }}" class="img-wrap">
+                <img src="{{ product.images.url }}" />
+              </a>
+              <figcaption class="info-wrap">
+                <a href="{{ product.get_url }}" class="title">{{ product.product_name }}</a>
+                <div class="price mt-1">Rs.{{ product.price }}</div>
+                  {% comment %} <p class="card-text">{{ product.description }}</p> {% endcomment %}
+    
                 <!-- price-wrap.// -->
               </figcaption>
             </div>
