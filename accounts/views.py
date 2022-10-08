@@ -1,11 +1,14 @@
 # from orders.models import Order
 from email.message import EmailMessage
 from django.shortcuts import render,redirect
-from accounts.forms import RegistrationForm
-from accounts.models import Account
+from .forms import RegistrationForm
+from .models import Account
 from django.contrib import messages,auth
 from django.contrib.auth.decorators import login_required 
-
+from django.views.decorators.cache import never_cache
+from cart.models import Cart,CartItem
+from cart.views import _cart_id
+import requests
 
 # Create your views here.
 # verification_email
@@ -51,18 +54,43 @@ def register(request):
         'form':form,
     }
     return render(request,'accounts/register.html',context)
-
+@never_cache
 def login(request):
     if request.method=="POST":
         email=request.POST['email']
         password=request.POST['password']
         
-        user=auth.authenticate(email=email,password=password)
+        user=auth.authenticate(request,email=email,password=password)
         
         if user is not None:
+            try:
+                # print('entering inside try block')
+                carts = Cart.objects.get(cart_id=_cart_id(request))
+                is_cart_item_exists = CartItem.objects.filter(cart=carts).exists()
+                # print(is_cart_item_exists)
+                if is_cart_item_exists:
+                    cart_items = CartItem.objects.filter(cart=carts)
+                    product_variation = []
+                    
+                    for item in cart_items:
+                        item.user = user
+                        item.save()
+            except:
+                pass
             auth.login(request, user)
             messages.success(request,"you are now logged in")
-            return redirect('dashboard')
+            
+            url = request.META.get('HTTP_REFERER')
+            try:
+                query = requests.utils.urlparse(url).query
+                # next=/cart/checkout
+                params = dict(x.split('=')for x in query.split('&'))
+                if 'next' in params:
+                    nextPage = params['next']
+                    return redirect(nextPage)
+                
+            except:
+                return redirect('dashboard')   
         else:
             messages.error(request,"invlaid login credentials")
             return redirect('login')

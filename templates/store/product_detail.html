@@ -19,7 +19,8 @@
     </article> <!-- gallery-wrap .end// -->
             </aside>
             <main class="col-md-6 border-left">
-              <form action= "{% url 'add_to_cart' single_product.id %}">
+              <form action= "{% url 'add_to_cart' single_product.id %}" method="POST">
+                {% csrf_token %}
     <article class="content-body">
     
     <h2 class="title">{{ single_product.product_name }}</h2>
@@ -36,9 +37,10 @@
             <div class="item-option-select">
                 <h6>Choose Color</h6>
                <select name="color" class="form-control" >
-                <option value="red">Red</option>
-                <option value="yellow">yellow</option>
-                <option value="green">green</option>
+                <option value="" disabled selected>Select</option>
+                {% for i in single_product.variation_set.color %}
+                <option value="{{i.variation_value | lower}}">{{i.variation_value | capfirst}}</option>
+                {% endfor %}
                </select>
             </div>
         </div> <!-- row.// -->
@@ -56,12 +58,7 @@
         {% if single_product.stock <= 0   %}
         <h4 class="text text-danger">Out of Stock</h4>
         {% else %}
-          {% if in_cart %}
-          <a href="#" class="btn  btn-success"> <span class="text">Added to Cart</span> <i class="fas fa-check"></i>  </a>
-          <a href="{% url 'cart' %}" class="btn  btn-outline-primary"> <span class="text">View Cart</span> <i class="fas fa-eye"></i>  </a>
-          {% else %}
            <button type="submit" class="btn  btn-dark"> <span class="text">Add to Cart</span> <i class="fas fa-shopping-cart"></i>  </button>
-           {% endif %}
         {% endif %}
     </article>
   </form>   <!-- product-info-aside .// -->
