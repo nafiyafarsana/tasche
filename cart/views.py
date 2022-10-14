@@ -1,5 +1,6 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from cart.models import Cart, CartItem
+from orders.models import Order
 from store.models import Product, Variation
 from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist

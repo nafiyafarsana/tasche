@@ -3,6 +3,22 @@ from .models import Payment,Order,OrderProduct
 
 # Register your models here.
 
-admin.site.register(Payment)
-admin.site.register(Order)
-admin.site.register(OrderProduct)
+class OrderAdmin(admin.ModelAdmin):
+    list_display =['user','order_number','payment','order_total','status','is_ordered','created_at']
+    list_editable = ('status',)
+    list_filter = ('user','status','is_ordered','created_at')
+    
+
+class OrderProductAdmin(admin.ModelAdmin):
+  list_display = ['order', 'payment', 'user', 'product', 'quantity', 'product_price', 'ordered', 'created_at']
+  list_filter = ('user', 'ordered', 'created_at')
+  
+
+class PaymentAdmin(admin.ModelAdmin):
+  list_display = ['user', 'payment_id', 'order_number', 'order_id', 'amount_paid', 'status', 'payment_method', 'created_at']
+  list_editable = ('status',)
+  list_filter = ('user', 'status', 'created_at')
+
+admin.site.register(Payment,PaymentAdmin)
+admin.site.register(Order,OrderAdmin)
+admin.site.register(OrderProduct,OrderProductAdmin)

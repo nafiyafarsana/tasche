@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'store',
     'cart',
     'orders',
+    'adminpanel',
 ]
 
 MIDDLEWARE = [
@@ -146,7 +147,8 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
     
 }
-
+RAZORPAY_KEY_ID = 'rzp_test_xAORvaB3aIotL4'
+RAZORPAY_SECRET_ID = 'kdkHlCDnl3qP1q8k3xIP1o1H'
 
 # SMTP configuration
 EMAIL_HOST='smtp.gmail.com'
