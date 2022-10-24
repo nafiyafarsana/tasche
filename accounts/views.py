@@ -3,13 +3,14 @@ from email.message import EmailMessage
 from django.shortcuts import get_object_or_404, render,redirect
 from .forms import RegistrationForm,UserForm,UserprofileForm
 from .models import Account,UserProfile
-from orders.models import Order
+from orders.models import Order, OrderProduct
 from django.contrib import messages,auth
 from django.contrib.auth.decorators import login_required 
 from django.views.decorators.cache import never_cache
 from cart.models import Cart,CartItem
-from cart.views import _cart_id
 import requests
+from cart.views import _cart_id
+
 
 # Create your views here.
 # verification_email
@@ -44,8 +45,8 @@ def register(request):
                  'uid':urlsafe_base64_encode(force_bytes(user.pk)),
                  'token':default_token_generator.make_token(user)
             })
-            to_email=email
-            send_email=EmailMessage(mail_subject,message,to=[to_email])
+            to_mail = email
+            send_email = EmailMessage(mail_subject, message, to=[to_mail])
             send_email.send()
             # messages.success(request,"Thank You for registering with us.We have sent you a verification mail to your email address.Please verify it.")
             return redirect('/accounts/login/?command=verification&email='+email)
@@ -117,7 +118,7 @@ def login(request):
                     return redirect(nextPage)
                 
             except:
-                return redirect('dashboard')   
+                return redirect('home')   
         else:
             messages.error(request,"invlaid login credentials")
             return redirect('login')
@@ -141,45 +142,86 @@ def activate(request,uidb64,token):
         user.is_active=True
         user.save()
         messages.success(request,'Congratulations!your account is activated.')
+        
+        # Userprofile generation
+        user_profile = UserProfile.objects.create(
+            user = user,
+            address_line_1 = "address 1",
+            address_line_2 = "address 2"
+        )
+         
+        user_profile.save()
+        
         return redirect('login')
     else:
         messages.error(request,'invalid activation link')
         return redirect('register')
     
 @login_required(login_url='login') 
-def dashboard(request):
-    orders = Order.objects.order_by('created_at').filter(user_id=request.user.id,is_ordered=True)
-    orders_count=orders.count()
-    context ={
-        'orders_count':orders_count,
+def user_dashboard(request):
+    orders = Order.objects.order_by('-created_at').filter(user_id=request.user.id, is_ordered=True)
+    orders_count = orders.count()
+    
+    userprofile = UserProfile.objects.get(user_id = request.user.id)
+    context = {
+        'orders_count': orders_count,
+        'userprofile': userprofile,
     }
-    return render(request,'accounts/dashboard.html',context)
-
+    return render(request, 'accounts/user_dashboard.html',context)
 
 def forgotpassword(request):
-    if request.method=='POST':
-        email=request.POST.get('email')
+    if request.method == 'POST':
+        email = request.POST['email']
         if Account.objects.filter(email=email).exists():
-            user=Account.objects.get(email__exact=email)
-            # first password exist
-            current_site=get_current_site(request)
-            mail_subject="Reset your password"
-            message= render_to_string('accounts/reset_password_email.html',{
-                'user':user,
-                'domain':current_site,
-                 'uid':urlsafe_base64_encode(force_bytes(user.pk)),
-                 'token':default_token_generator.make_token(user)
+            user = Account.objects.get(email__iexact=email)
+           
+           # Reset password email
+            current_site = get_current_site(request)
+            mail_subject = 'Reset Your Password'
+            message = render_to_string('accounts/reset_password_email.html', {
+                'user': user,
+                'domain': current_site,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': default_token_generator.make_token(user),
             })
-            to_email=email
-            send_email=EmailMessage(mail_subject,message,to=[to_email])
+            to_email = email
+            send_email = EmailMessage(mail_subject, message, to=[to_email])
             send_email.send()
-            
-            messages.success(request,'password reset email has been sent to your email address')
-            return redirect ('login')
+          
+            messages.success(request, 'Password reset email has been sent to your email address.')
+            return redirect('login')
+          
         else:
-            messages.error(request,'Account does not exist')
-            return redirect('forgotpassword') 
-    return render(request,'accounts/forgotpassword.html')
+            messages.error(request, 'Account does not exist!')    
+            return redirect('forgotpassword')
+    return render(request, 'accounts/forgotpassword.html')
+
+#   if request.method == 'POST':
+#     email = request.POST['email']
+#     try:
+#       user = Account.objects.get(email=email, is_active=True)
+      
+#       # USER ACTIVATION
+#       current_site = get_current_site(request)
+#       mail_subject = "Reset Password"
+#       message = render_to_string('accounts/forgot_password_email.html', {
+#         'user': user,
+#         'domain': current_site,
+#         'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+#         'token': default_token_generator.make_token(user),
+#       })
+#       to_mail = email
+#       send_email = EmailMessage(mail_subject, message, to=[to_mail])
+#       send_email.send()
+      
+#       messages.success(request, 'Reset link has been sended to your verified email address')
+#     except:
+#       messages.error(request, 'Account not found')
+  
+#   return render(request, 'accounts/forgotpassword.html')
+
+ 
+
         
 def resetpassword_validate(request,uidb64,token):
     try:
@@ -214,7 +256,7 @@ def resetpassword(request):
         
     else:
         return render(request,'accounts/resetpassword.html')
-    
+@login_required(login_url='login')    
 def my_orders(request):
     orders = Order.objects.filter(user=request.user,is_ordered=True).order_by('created_at')
     context = {
@@ -242,4 +284,56 @@ def edit_profile(request):
         'userprofile' : userprofile,
         }
     return render(request,'accounts/edit_profile.html',context)
+@login_required(login_url='login')
+def change_password(request):
+    if request.method == 'POST':
+        current_password = request.POST['current_password']
+        new_password = request.POST['new_password']
+        confirm_password = request.POST['confirm_password']
+        
+        user = Account.objects.get(username__exact=request.user.username)
+        
+        if new_password == confirm_password:
+            success = user.check_password(current_password)
+            if success:
+                user.set_password(new_password)
+                user.save()
+                #auth.logout(request)
+                messages.success(request, 'Password updated successfully.')
+                return redirect('change_password')
+            else:
+                messages.error(request, 'Please enter valid current password')
+                return redirect('change_password')
+            
+        else:
+            messages.error(request, 'Password does not match!')
+            return redirect('change_password')
+        
+    return render(request,'accounts/change_password.html')
+@login_required(login_url='login')
+def order_detail(request,order_id):
+    order_detail =  OrderProduct.objects.filter(order__order_number=order_id)   
+    order = Order.objects.get(order_number=order_id)
+    
+    total = 0
+    tax = 0
+    grand_total = 0
+    for i in order_detail:
+        total += i.product_price * i.quantity
+        
+    tax = 2*total / 100
+    grand_total = total + tax
+
+    
+    # variations = Variation.objects.filter(variation_category=variation_category,variation_value=variation_value)
+    context = {
+        'order_detail' : order_detail,
+        'order' : order, 
+        
+        'total':total,
+        'tax':tax,
+        'grand_total':grand_total
+
+    }
+    return render(request,'accounts/order_detail.html',context)
     

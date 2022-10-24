@@ -24,8 +24,7 @@
                         
                         <div class="col-lg-6">
                             <!-- col-lg-6 start here -->
-                            <div class="invoice-logo d-flex"><img src="{% static '/static files/images/invoice_logo' %}" alt="Invoice logo" style="max-height: 40px;">
-                            <SPan class="logotext mt-2"></SPan></div>
+                            <h2 class="a text-dark">tasche</h2>
                         </div>
                         
                         <!-- col-lg-6 end here -->
@@ -48,7 +47,7 @@
                                 <div class="well">
                                     <ul class="list-unstyled mb0">
                                         <li><strong>Order</strong> #{{order.order_number}}</li>
-                                        <li><strong>Transaction</strong> #{{  transaction.payment_id}}</li>
+                                        <li><strong>Transaction</strong> #{{  transaction_id}}</li>
                                         <li><strong>Order Date:</strong>{{order.created_at}}</li>
                                         <li><strong>Status:</strong>{{order.status}}</li>
                                     </ul>
@@ -60,7 +59,7 @@
                                     <table class="table table-bordered">
                                         <thead>
                                             <tr>
-                                                <th class="per70 text-center">Description</th>
+                                                <th class="per70 text-center">Product Name</th>
                                                 <th class="per5 text-center">Qty</th>
                                                 <th class="per25 text-center">Total</th>
                                             </tr>
@@ -68,8 +67,16 @@
                                         <tbody>
                                             {% for order_product in ordered_products %}
                                             <tr>
-                                                <td>{{order_product.product_name}}</td>  
-                                                                        
+                                                <td class='text-center'>{{order_product.product}}
+                                                    <p class="text-muted small">
+                                                        {% if order_product.variations.all %}
+                                                            {% for item in order_product.variations.all %}
+                                                             {{ item.variation_category | capfirst }} : {{ item.variation_value | capfirst }}
+                                                           {% endfor %}
+                                                        {% endif %}
+                                                    </p>
+                                                </td>  
+                                                
                                                 <td class="text-center">{{order_product.quantity}}</td>
                                                 <td class="text-center">₹ {{order_product.product_price}}</td>
                                             </tr>

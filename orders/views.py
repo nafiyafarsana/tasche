@@ -71,28 +71,19 @@ def place_order(request,total=0,quantity=0):
            data.save()
            
            
-           order = Order.objects.get(user=current_user, is_ordered=False,order_number=order_number)
+           order = Order.objects.get(user=current_user, order_number=order_number)
            order_number = order.order_number
+           print(order_number)
            request.session['order_number'] = order_number
-           print(request.session['order_number'])
-           context = {
-               'order':order,
-               'cart_items':cart_items,
-               'total':total,
-               'tax':tax,
-               'grand_total':grand_total,
-           }
+           
            return redirect('payments')
-        #    return render(request,'orders/payment.html',context)
        else:
            return redirect('checkout')
        
 
 @csrf_exempt
 def success(request):
-    
   order_number = request.session['order_number']
-  
   transaction_id = Payment.objects.get(order_number=order_number)
   
   try:
@@ -150,8 +141,6 @@ def payments(request):
      
      order = Order.objects.get(user=current_user,is_ordered=False,order_number=order_number)
      
-     currency = 'INR'
-     
      client = razorpay.Client(auth = (settings.RAZORPAY_KEY_ID , settings.RAZORPAY_SECRET_ID))
      payment = client.order.create({'amount':grand_total_razorpay , 'currency':'INR', 'payment_capture':1})
      order_id = payment['id']
@@ -178,12 +167,7 @@ def payments(request):
      }
      return render(request,'orders/payment.html',context)
 
-
-       
-           
-
-
-
+@csrf_exempt
 def payment_status(request):
     response = request.POST
     params_dict = {
@@ -206,7 +190,7 @@ def payment_status(request):
         
         # get order
         order_number = transaction.order_number
-        order = Order.objects.get(is_ordered=False, order_number=order_number)
+        order = Order.objects.get(order_number=order_number)
         order.payment = transaction
         order.is_ordered = True
         order.save()
@@ -224,7 +208,20 @@ def payment_status(request):
             orderproduct.ordered = True
             orderproduct.save()
             
-            #clear cart
+            
+            # Reducing Stock
+            product = Product.objects.get(id=item.product_id)
+            product.stock -= item.quantity
+            product.save()
+                    
+             #  Clearing Cart Items
+            # cart_item = CartItem.objects.get(id=item.id)
+            # product_variation = cart_item.variations.all()
+            # orderproduct = OrderProduct.objects.get(id=orderproduct.id)
+            # orderproduct.variation.set(product_variation)
+            # orderproduct.save()
+            
+        CartItem.objects.filter(user=order.user).delete()
             
         CartItem.objects.filter(user=order.user).delete()
         # current_site = get_current_site(request)
@@ -235,20 +232,23 @@ def payment_status(request):
         #     'domain' : current_site,
         # })
         # to_email = order.user.email
-        # send_email = EmailMessage(mail_subject, message, to =[to_email])
+        # send_email = EmailMessage(mail_subject, message, to=[to_email])
         # send_email.send()
         
-        
-        return redirect('payment_success')
-    except:
-       
+        # current_site=get_current_site(request)
+        # mail_subject="please activate your account"
+        # message= render_to_string('orders/order_recieved_email.html',{
+        #     'user':order.user,
+        #     'domain':current_site,
+  
+        # })
+        # to_mail = order.user.email
+        # send_email = EmailMessage(mail_subject, message, to=[to_mail])
+        # send_email.send()
+    
+        return redirect('success')
+    except Exception as e:
+        raise e
         transaction = Payment.objects.get(order_id=response['razorpay_order_id'])
         transaction.delete()
-        return redirect('payment_fail')
-        
-
-                     
-
-
- 
-       
+        return redirect('payment_failure')

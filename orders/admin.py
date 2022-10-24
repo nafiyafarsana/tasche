@@ -1,4 +1,6 @@
 from django.contrib import admin
+
+from store.models import ProductGallery
 from .models import Payment,Order,OrderProduct
 
 # Register your models here.
@@ -22,3 +24,4 @@ class PaymentAdmin(admin.ModelAdmin):
 admin.site.register(Payment,PaymentAdmin)
 admin.site.register(Order,OrderAdmin)
 admin.site.register(OrderProduct,OrderProductAdmin)
+admin.site.register(ProductGallery)

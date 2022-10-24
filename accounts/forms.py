@@ -51,14 +51,12 @@ class UserForm(forms.ModelForm):
     
         
 class UserprofileForm(forms.ModelForm):
+    profile_picture = forms.ImageField(required=False, error_messages= {'invalid':("image files only")},widget=forms.FileInput)
     class Meta:
         model = UserProfile
         fields = ('address_line_1','address_line_2','city','state','country','profile_picture')
             
-            
-        
-    def _init_(self, *args, **kwargs):
-         super(UserprofileForm,self).__init__(*args,**kwargs)
-         for field in self.fields:
-             self.fields[field].widget.attrs['class'] = 'form-control'
-   
+    def __init__(self, *args, **kwargs):
+     super(UserprofileForm,self).__init__(*args,**kwargs)  
+     for field in self.fields:
+       self.fields[field].widget.attrs['class'] = 'form-control' 

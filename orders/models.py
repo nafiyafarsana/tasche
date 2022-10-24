@@ -16,7 +16,7 @@ class Payment(models.Model):
     
     
     def __str__(self):
-        return self.order_number
+        return self.payment_id
     
 
 class Order(models.Model):
@@ -60,15 +60,15 @@ class Order(models.Model):
         return f'{self.address_line_1} {self.address_line_2}'
     
     def __str__(self):
-        return self. first_name
+        return self.first_name
     
 
 class OrderProduct(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE,null=True,blank=True)
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE,blank=True,null=True)
     user = models.ForeignKey(Account, on_delete=models.CASCADE)
     product = models.ForeignKey(Product,on_delete=models.CASCADE)
-    variation = models.ForeignKey(Variation,on_delete=models.CASCADE)
+    variation = models.ForeignKey(Variation,on_delete=models.CASCADE, blank=True, null=True)
     color = models.CharField(max_length=50)
     quantity = models.IntegerField()
     product_price = models.FloatField()
@@ -78,7 +78,7 @@ class OrderProduct(models.Model):
     
     
     def __str__(self):
-        return self.product.product_name 
+        return self.product.product_name
     
     
     
